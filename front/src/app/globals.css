@@ -1,0 +1,4 @@
+@import "tailwindcss";
+@theme{--color-brand:#0f8a5f;--color-brand-dark:#0b6b4a;--color-lime:#e6f57a;--font-sans:var(--font-outfit),ui-sans-serif,system-ui,sans-serif;}
+body{overflow-x:hidden;min-height:100vh;color:#14211b;background:linear-gradient(160deg,#e9f0ec,#f7faf8 55%,#e3eee7)}
+:focus-visible{outline:2px solid #0f8a5f;outline-offset:2px}
