@@ -1,0 +1,25 @@
+{
+  "name": "lendloop-back",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest run",
+    "dev": "convex dev",
+    "typecheck": "tsc -p convex --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "private": "true",
+  "dependencies": {
+    "convex": "^1.51.0"
+  },
+  "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
+    "@types/node": "^26.6.6",
+    "convex-test": "^0.0.75",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.1"
+  }
+}
