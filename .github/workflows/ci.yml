@@ -29,13 +29,22 @@ jobs:
     defaults:
       run:
         working-directory: front
+    env:
+      # Dummy values: the build only needs them to exist, nothing is contacted.
+      NEXT_PUBLIC_CONVEX_URL: http://127.0.0.1:3210
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk
+      CLERK_SECRET_KEY: sk_test_dummydummydummydummydummydummy
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: front/package-lock.json
+          cache-dependency-path: |
+            front/package-lock.json
+            back/package-lock.json
+      # The front imports the typed Convex API from ../back, so back dependencies are needed too
+      - run: npm ci --prefix ../back
       - run: npm ci
       - run: npx tsc --noEmit
       - run: npm run build
