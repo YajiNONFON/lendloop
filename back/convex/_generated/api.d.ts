@@ -8,6 +8,9 @@
  * @module
  */
 
+import type * as loans_domain from "../loans/domain.js";
+import type * as loans_mutations from "../loans/mutations.js";
+import type * as loans_queries from "../loans/queries.js";
 import type * as shared_auth from "../shared/auth.js";
 import type * as shared_errors from "../shared/errors.js";
 import type * as shared_hmac from "../shared/hmac.js";
@@ -25,6 +28,9 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "loans/domain": typeof loans_domain;
+  "loans/mutations": typeof loans_mutations;
+  "loans/queries": typeof loans_queries;
   "shared/auth": typeof shared_auth;
   "shared/errors": typeof shared_errors;
   "shared/hmac": typeof shared_hmac;
