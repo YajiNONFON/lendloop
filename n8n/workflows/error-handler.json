@@ -1,0 +1,153 @@
+{
+  "name": "LendLoop - Error handler",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "13a10ef9-8c43-44e3-94ac-e1f83363b9be",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Turns an n8n failure into an event Convex can store, so failures are visible in the app's journal.\nconst e = $input.first().json;\nconst detail = `${e.workflow?.name ?? 'workflow'}: ${e.execution?.error?.message ?? 'unknown error'}`.slice(0, 400);\nreturn [{ json: {\n  ts: Date.now(),\n  body: JSON.stringify({ key: `error:${e.execution?.id ?? Date.now()}`, type: 'n8n_error', status: 'failed', detail }),\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "8abf7909-44ad-4872-8c68-feb84d892762",
+      "name": "Format error"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        440,
+        0
+      ],
+      "id": "2dd8f158-f69d-4939-8149-fb701c3301f8",
+      "name": "Mock alert (logged)",
+      "notes": "Replace with a Slack or email alert to the team.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "value": "={{ $json.ts + '.' + $json.body }}",
+        "dataPropertyName": "signature",
+        "secret": "={{ $env.AUTOMATION_SECRET }}",
+        "encoding": "hex"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        660,
+        0
+      ],
+      "id": "c96bbc43-3684-4f15-8e76-26b996ec352c",
+      "name": "Sign write-back"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CONVEX_SITE_URL }}/automation/event",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-lendloop-timestamp",
+              "value": "={{ $json.ts }}"
+            },
+            {
+              "name": "x-lendloop-signature",
+              "value": "={{ $json.signature }}"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "id": "abad6fe4-8b58-44c8-8f06-2087a6e5c717",
+      "name": "Record error in Convex",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "pipeData": null,
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Format error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format error": {
+      "main": [
+        [
+          {
+            "node": "Mock alert (logged)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mock alert (logged)": {
+      "main": [
+        [
+          {
+            "node": "Sign write-back",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign write-back": {
+      "main": [
+        [
+          {
+            "node": "Record error in Convex",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

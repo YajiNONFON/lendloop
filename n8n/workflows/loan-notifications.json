@@ -1,0 +1,214 @@
+{
+  "name": "LendLoop - Loan notifications",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lendloop-loan-events",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "6fe1944d-fd13-4686-859d-04123ccda468",
+      "name": "Webhook",
+      "webhookId": "0e6c072a-8f79-4a0a-8d60-8a77e63a253a"
+    },
+    {
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "value": "={{ $json.headers['x-lendloop-timestamp'] + '.' + JSON.stringify($json.body) }}",
+        "dataPropertyName": "expectedSignature",
+        "secret": "={{ $env.AUTOMATION_SECRET }}",
+        "encoding": "hex"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        220,
+        0
+      ],
+      "id": "afc3e6ac-a1a8-4579-ae23-a63b191ddc40",
+      "name": "Compute expected signature"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "f132edee-6da4-4c97-8e0c-bbd01be68487",
+              "leftValue": "={{ $json.expectedSignature }}",
+              "rightValue": "={{ $json.headers['x-lendloop-signature'] }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "386e7f71-b9b7-4424-be1d-ac8800b005a4",
+              "leftValue": "={{ Math.abs(Date.now() - Number($json.headers['x-lendloop-timestamp'])) < 300000 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "b9fe1845-5b32-457f-8474-acc2fa244d78",
+      "name": "Signature valid and fresh?"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Turns the signed payload into a short message. Only the minimal fields sent by Convex are used.\nconst b = $input.first().json.body;\nconst when = `${b.startDate} to ${b.endDate}`;\nconst texts = {\n  requested: `${b.otherPartyName} would like to borrow your ${b.toolName} (${when}).`,\n  approved: `${b.otherPartyName} approved your request for the ${b.toolName} (${when}).`,\n  declined: `${b.otherPartyName} declined your request for the ${b.toolName}.`,\n  cancelled: `${b.otherPartyName} cancelled the request for your ${b.toolName}.`,\n  returned: `Your loan of ${b.otherPartyName}'s ${b.toolName} is marked as returned. Thank you!`,\n};\nreturn [{ json: {\n  to: b.recipientEmail,\n  subject: `LendLoop: ${b.event}`,\n  text: `Hi ${b.recipientName}, ${texts[b.event]}`,\n  eventId: $input.first().json.headers['x-lendloop-event-id'],\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        -100
+      ],
+      "id": "258a0dad-1fdd-4520-9355-2cfa7ecbbb48",
+      "name": "Build message"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        900,
+        -100
+      ],
+      "id": "c54d7358-ca5b-4869-b808-e207588f73f6",
+      "name": "Mock notification (logged)",
+      "notes": "Replace with Send Email, Slack or Discord using an n8n credential. The message is in this node's output.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "ok",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        -100
+      ],
+      "id": "ef89874f-95bf-4eff-ae19-3191bb1c07fc",
+      "name": "Respond OK"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "invalid signature",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        120
+      ],
+      "id": "bb558816-7840-4b90-be41-7a5bfd58894f",
+      "name": "Respond 401"
+    }
+  ],
+  "pipeData": null,
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Compute expected signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute expected signature": {
+      "main": [
+        [
+          {
+            "node": "Signature valid and fresh?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signature valid and fresh?": {
+      "main": [
+        [
+          {
+            "node": "Build message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build message": {
+      "main": [
+        [
+          {
+            "node": "Mock notification (logged)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mock notification (logged)": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
