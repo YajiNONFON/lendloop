@@ -28,11 +28,13 @@ flowchart LR
 - **One place for access control** (`shared/auth.ts`): every function starts with `requireUser` or `requireAdmin`, so a check is hard to forget. The role is stored and decided on the server, never sent by the client.
 - **One place for status changes** (`loans/mutations.ts`, `act`): approve, decline, cancel and return share one transition table, so the rules cannot drift apart.
 - **Overdue is computed, not stored**: a loan is late when it is approved and its end date has passed. No job has to keep a status in sync.
+- **No double booking, by design:** every Convex mutation is a serializable transaction. The overlap check and the status change happen in the same transaction, so if two approvals race, one commits and the other is retried, sees the first booking and is refused. The same rule protects against a double click on *Request* and against a duplicate automation write-back. Tests fire these calls at the same time.
 - **Notifications are scheduled, not inline**: the loan is saved first, then Convex tells n8n. A slow n8n never blocks the user.
 
 ## Security
 - **Server-side access control** on every function (owner, lender, borrower, admin). Tests cover the forbidden cases.
 - **Signed integration in both directions:** HMAC-SHA256 of `timestamp.body`, messages older than 5 minutes are refused (limits replay), constant-time comparison.
+- **Input validation on every function:** Convex argument validators check types and ids, and the domain rules check lengths, allowed categories and conditions, and dates. Quotas limit mistakes and abuse: at most 50 tools per user, 10 pending requests per borrower, no duplicate request for the same dates, and loans of at most 90 days.
 - **Secrets** are environment variables (Convex environment, `n8n/.env`, `front/.env.local`), never in the code or in the exported workflows.
 - **Idempotency:** each automation record has a unique key, so a retry never creates a duplicate reminder or journal entry.
 - **Failures are visible:** Convex retries 3 times then records `failed`; n8n retries HTTP calls and an error workflow reports failed runs back to Convex; the app shows the last automation event on each loan.
@@ -44,7 +46,7 @@ flowchart LR
 - Tools are soft-deleted, so loan history stays available for audit.
 
 ## Tests and CI
-- 69 back-end tests (Vitest and convex-test): domain rules, access control, loan lifecycle, overlapping bookings, signatures, retries, idempotency, HTTP endpoints.
+- 77 back-end tests (Vitest and convex-test): domain rules, access control, loan lifecycle, overlapping bookings, signatures, retries, idempotency, HTTP endpoints.
 - GitHub Actions runs the back-end typecheck and tests and the front-end typecheck and build on every pull request.
 
 ## Run it locally
@@ -75,6 +77,8 @@ Prerequisites: Node 22, Docker Desktop.
 | `n8n/.env` | `AUTOMATION_SECRET`, `CONVEX_SITE_URL` | Used by the n8n workflows |
 
 ## Known limits
+- **No pagination yet:** lists load in full, which is fine at neighbourhood scale (and each user is limited to 50 tools). In production they would use Convex pagination (`paginate` on the server, `usePaginatedQuery` in the screens).
+- **No photo upload:** tool images are generated placeholders. Next step: Convex file storage with type and size checks, and the placeholder when no photo is set.
+- **Connection loss:** an offline banner appears, and Convex reconnects on its own. An error page lets the user retry if a screen fails.
 - Notifications are logged mock nodes in n8n; swap them for Send Email, Slack or Discord with an n8n credential.
-- Tool photos are placeholders (no upload).
 - See `docs/PRODUCTION.md` for what would change in production.
