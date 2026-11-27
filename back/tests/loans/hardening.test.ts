@@ -1,0 +1,27 @@
+import {convexTest} from "convex-test";
+import {expect,test} from "vitest";
+import schema from "../../convex/schema";
+import {modules} from "../setup";
+import {api} from "../../convex/_generated/api";
+import {validateDates} from "../../convex/loans/domain";
+const idn=(sub:string)=>({tokenIdentifier:`https://clerk.test|${sub}`,subject:sub,name:sub,email:`${sub}@x.test`});
+const d=(n:number)=>new Date(Date.now()+n*864e5).toISOString().slice(0,10);
+const tool=(name:string)=>({name,category:"Other",condition:"Good",description:""});
+async function setup(){const t=convexTest(schema,modules);
+  const as=async(sub:string)=>{const c=t.withIdentity(idn(sub));await c.mutation(api.users.mutations.store,{});return c;};
+  return{awa:await as("awa"),koffi:await as("koffi")};}
+test("a loan cannot last more than 90 days",()=>{expect(validateDates("2026-12-01","2027-02-28","2026-11-30")).toBeNull();expect(validateDates("2026-12-01","2027-03-05","2026-11-30")).toMatch(/90 days/);});
+test("the server refuses a loan longer than 90 days",async()=>{const{awa,koffi}=await setup();const toolId=await awa.mutation(api.tools.mutations.create,tool("Drill"));
+  await expect(koffi.mutation(api.loans.mutations.request,{toolId,startDate:d(1),endDate:d(120)})).rejects.toMatchObject({data:{code:"INVALID"}});
+  await koffi.mutation(api.loans.mutations.request,{toolId,startDate:d(1),endDate:d(60)});});
+test("the same person cannot request the same tool twice for overlapping dates",async()=>{const{awa,koffi}=await setup();const toolId=await awa.mutation(api.tools.mutations.create,tool("Drill"));
+  await koffi.mutation(api.loans.mutations.request,{toolId,startDate:d(1),endDate:d(4)});
+  await expect(koffi.mutation(api.loans.mutations.request,{toolId,startDate:d(3),endDate:d(6)})).rejects.toMatchObject({data:{code:"INVALID"}});
+  await koffi.mutation(api.loans.mutations.request,{toolId,startDate:d(10),endDate:d(12)});});
+test("a borrower cannot have more than 10 pending requests",async()=>{const{awa,koffi}=await setup();
+  const ids=[];for(let i=0;i<11;i++)ids.push(await awa.mutation(api.tools.mutations.create,tool(`Tool ${i}`)));
+  for(let i=0;i<10;i++)await koffi.mutation(api.loans.mutations.request,{toolId:ids[i],startDate:d(1),endDate:d(2)});
+  await expect(koffi.mutation(api.loans.mutations.request,{toolId:ids[10],startDate:d(1),endDate:d(2)})).rejects.toMatchObject({data:{code:"INVALID"}});});
+test("a user cannot list more than 50 tools",async()=>{const{awa}=await setup();
+  for(let i=0;i<50;i++)await awa.mutation(api.tools.mutations.create,tool(`Tool ${i}`));
+  await expect(awa.mutation(api.tools.mutations.create,tool("One too many"))).rejects.toMatchObject({data:{code:"INVALID"}});});

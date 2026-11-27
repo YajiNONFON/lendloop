@@ -2,11 +2,14 @@
 export type LoanStatus="pending"|"approved"|"declined"|"cancelled"|"returned";
 export type Action="approve"|"decline"|"cancel"|"return";
 export type Actor="lender"|"borrower";
+export const MAX_LOAN_DAYS=90;
+export const MAX_PENDING_REQUESTS=10;
 const isDate=(s:string)=>/^\d{4}-\d{2}-\d{2}$/.test(s)&&!Number.isNaN(Date.parse(s));
 export function validateDates(start:string,end:string,today:string):string|null{
   if(!isDate(start)||!isDate(end))return "Dates must look like YYYY-MM-DD";
   if(start<today)return "The start date cannot be in the past";
   if(end<start)return "The end date cannot be before the start date";
+  if((Date.parse(end)-Date.parse(start))/864e5>MAX_LOAN_DAYS)return `A loan cannot last more than ${MAX_LOAN_DAYS} days`;
   return null;}
 export const overlaps=(aStart:string,aEnd:string,bStart:string,bEnd:string)=>aStart<=bEnd&&bStart<=aEnd;
 export const canBorrow=(userId:string,ownerId:string)=>userId!==ownerId;
