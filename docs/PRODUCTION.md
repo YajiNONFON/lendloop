@@ -25,6 +25,12 @@
 - Backups and a tested restore procedure for the database; a runbook for the n8n error workflow.
 - Real email delivery through a provider with bounce handling instead of the logged mock node.
 
+## Scale and abuse protection
+- **Pagination:** replace the full lists with Convex pagination (`paginate` on the server, `usePaginatedQuery` in the screens) and add search and filter indexes for categories and names.
+- **Quotas and rate limiting:** the per-user quotas (50 tools, 10 pending requests) are in place; add request rate limiting per user and per IP.
+- **Photo upload:** use Convex file storage with short-lived upload URLs, allow only JPEG, PNG and WebP, cap the size (about 2 MB), resize on the server and scan files, and keep the generated placeholder when no photo is set.
+- **Offline behaviour:** add optimistic updates for common actions and clearer retry states for failed mutations.
+
 ## Quality
 - End-to-end tests (Playwright) for the sign-in and loan flow, run in CI against a preview deployment.
 - Dependency and security scanning in CI, and branch protection requiring green checks and one review.

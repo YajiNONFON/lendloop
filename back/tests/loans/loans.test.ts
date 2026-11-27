@@ -43,7 +43,7 @@ test("two approved loans cannot overlap on the same tool",async()=>{const{awa,ko
   await awa.c.mutation(api.loans.mutations.decide,{loanId:a,decision:"approve"});
   await expect(awa.c.mutation(api.loans.mutations.decide,{loanId:b,decision:"approve"})).rejects.toMatchObject({data:{code:"INVALID"}});
   await expect(nadia.c.mutation(api.loans.mutations.request,{toolId,startDate:d(2),endDate:d(2)})).rejects.toMatchObject({data:{code:"INVALID"}});
-  const c=await nadia.c.mutation(api.loans.mutations.request,{toolId,startDate:d(5),endDate:d(7)});
+  const c=await nadia.c.mutation(api.loans.mutations.request,{toolId,startDate:d(7),endDate:d(8)});
   await awa.c.mutation(api.loans.mutations.decide,{loanId:c,decision:"approve"});});
 test("the borrower can cancel a pending request, not an approved one",async()=>{const{awa,koffi,toolId}=await setup();
   const a=await koffi.c.mutation(api.loans.mutations.request,{toolId,startDate:d(1),endDate:d(2)});

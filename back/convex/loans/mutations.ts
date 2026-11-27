@@ -7,7 +7,7 @@ import type {Id} from "../_generated/dataModel";
 import {v} from "convex/values";
 import {requireUser} from "../shared/auth";
 import {appError} from "../shared/errors";
-import {validateDates,overlaps,canBorrow,transition} from "./domain";
+import {validateDates,overlaps,canBorrow,transition,MAX_PENDING_REQUESTS} from "./domain";
 import type {Action,LoanStatus} from "./domain";
 const today=()=>new Date().toISOString().slice(0,10);
 const EVENT:Record<Action,LoanEvent>={approve:"approved",decline:"declined",cancel:"cancelled",return:"returned"};
@@ -23,6 +23,10 @@ export const request=mutation({args:{toolId:v.id("tools"),startDate:v.string(),e
   if(!canBorrow(u._id,t.ownerId))throw appError("INVALID","You cannot borrow your own tool");
   const err=validateDates(a.startDate,a.endDate,today());if(err)throw appError("INVALID",err);
   if((await approvedFor(ctx,t._id)).some(l=>overlaps(l.startDate,l.endDate,a.startDate,a.endDate)))throw appError("INVALID","This tool is already booked on those dates");
+  // Quotas against mistakes and abuse: no duplicate request, no flood of pending requests.
+  const mine=(await ctx.db.query("loans").withIndex("by_borrower",q=>q.eq("borrowerId",u._id)).collect()).filter(l=>l.status==="pending"||l.status==="approved");
+  if(mine.some(l=>l.toolId===t._id&&overlaps(l.startDate,l.endDate,a.startDate,a.endDate)))throw appError("INVALID","You already requested this tool for those dates");
+  if(mine.filter(l=>l.status==="pending").length>=MAX_PENDING_REQUESTS)throw appError("INVALID","Too many pending requests. Wait for answers or cancel some.");
   const id=await ctx.db.insert("loans",{toolId:t._id,borrowerId:u._id,lenderId:t.ownerId,startDate:a.startDate,endDate:a.endDate,status:"pending"});
   await notify(ctx,id,"requested");return id;}});
 // One place applies every status change, so the rules cannot drift apart.

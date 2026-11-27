@@ -2,11 +2,13 @@ import {mutation} from "../_generated/server";
 import {v} from "convex/values";
 import {requireUser} from "../shared/auth";
 import {appError} from "../shared/errors";
-import {validateTool,canEdit,canDelete,isBusy} from "./domain";
+import {validateTool,canEdit,canDelete,isBusy,MAX_TOOLS_PER_USER} from "./domain";
 const fields={name:v.string(),category:v.string(),condition:v.string(),description:v.string()};
 const today=()=>new Date().toISOString().slice(0,10);
 export const create=mutation({args:fields,handler:async(ctx,a)=>{
   const u=await requireUser(ctx);const r=validateTool(a);if(!r.ok)throw appError("INVALID",r.error);
+  const mine=await ctx.db.query("tools").withIndex("by_owner",q=>q.eq("ownerId",u._id)).collect();
+  if(mine.filter(x=>!x.deletedAt).length>=MAX_TOOLS_PER_USER)throw appError("INVALID",`You can list up to ${MAX_TOOLS_PER_USER} tools`);
   return await ctx.db.insert("tools",{ownerId:u._id,...r.value});}});
 export const update=mutation({args:{toolId:v.id("tools"),...fields},handler:async(ctx,{toolId,...rest})=>{
   const u=await requireUser(ctx);const t=await ctx.db.get(toolId);

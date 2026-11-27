@@ -1,6 +1,7 @@
 // Pure rules for tools: no database, easy to test.
 export const CATEGORIES=["Power tools","Garden","Kitchen","Camping","Cleaning","Other"] as const;
 export const CONDITIONS=["Like new","Good","Fair"] as const;
+export const MAX_TOOLS_PER_USER=50;
 export type ToolInput={name:string;category:string;condition:string;description:string};
 export type Validation={ok:true;value:ToolInput}|{ok:false;error:string};
 export function validateTool(i:ToolInput):Validation{
