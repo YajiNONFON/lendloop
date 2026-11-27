@@ -1,0 +1,24 @@
+import {convexTest} from "convex-test";
+import {beforeEach,expect,test} from "vitest";
+import schema from "../../convex/schema";
+import {modules} from "../setup";
+import {api} from "../../convex/_generated/api";
+const idn=(sub:string,email:string)=>({tokenIdentifier:`https://clerk.test|${sub}`,subject:sub,name:sub,email});
+const d=(n:number)=>new Date(Date.now()+n*864e5).toISOString().slice(0,10);
+beforeEach(()=>{process.env.ADMIN_EMAILS="boss@lendloop.test";});
+async function setup(){const t=convexTest(schema,modules);
+  const as=async(sub:string,email=`${sub}@x.test`)=>{const c=t.withIdentity(idn(sub,email));const id=await c.mutation(api.users.mutations.store,{});return{c,id};};
+  const awa=await as("awa"),koffi=await as("koffi"),boss=await as("boss","boss@lendloop.test");
+  const toolId=await awa.c.mutation(api.tools.mutations.create,{name:"Drill",category:"Power tools",condition:"Good",description:""});
+  await koffi.c.mutation(api.loans.mutations.request,{toolId,startDate:d(1),endDate:d(2)});
+  return{t,awa,koffi,boss};}
+test("only an admin can list every loan",async()=>{const{t,awa,boss}=await setup();
+  await expect(t.query(api.loans.queries.listAll,{})).rejects.toMatchObject({data:{code:"UNAUTHENTICATED"}});
+  await expect(awa.c.query(api.loans.queries.listAll,{})).rejects.toMatchObject({data:{code:"FORBIDDEN"}});
+  const all=await boss.c.query(api.loans.queries.listAll,{});expect(all.length).toBe(1);expect(all[0].role).toBe("admin");expect(all[0].lenderName).toBe("awa");});
+test("the admin user list never exposes sign-in tokens",async()=>{const{boss}=await setup();
+  const users=await boss.c.query(api.users.queries.listAll,{});expect(users.length).toBe(3);
+  for(const u of users)expect(Object.keys(u).sort()).toEqual(["_id","email","name","role","trustedLender"]);});
+test("a trusted lender is flagged on their tools",async()=>{const{awa,boss}=await setup();
+  await boss.c.mutation(api.users.mutations.setTrusted,{userId:awa.id,trusted:true});
+  expect((await boss.c.query(api.tools.queries.listAll,{}))[0].ownerTrusted).toBe(true);});
