@@ -1,8 +1,8 @@
 'use client';
 import {useState} from 'react';
 import {Modal,Btn,inp} from './ui';
-import {CATEGORIES,Tool} from '@/lib/types';
-export default function ToolForm({onClose,onSave}:{onClose:()=>void;onSave:(t:Omit<Tool,'id'|'ownerId'>)=>void}){
+import {CATEGORIES,ToolInput} from '@/lib/types';
+export default function ToolForm({onClose,onSave}:{onClose:()=>void;onSave:(t:ToolInput)=>void}){
 const[f,setF]=useState({name:'',category:CATEGORIES[0],condition:'Good',description:''});const set=(k:string,v:string)=>setF({...f,[k]:v});
 return <Modal title="List a tool" onClose={onClose}><div className="grid gap-3">
 <input className={inp} placeholder="Name" value={f.name} onChange={e=>set('name',e.target.value)}/>
