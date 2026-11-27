@@ -1,0 +1,22 @@
+# Local n8n for LendLoop. Start it with:  docker compose up -d   (from this folder)
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      # Secrets come from n8n/.env (never committed), not from the workflows.
+      - AUTOMATION_SECRET=${AUTOMATION_SECRET}
+      - CONVEX_SITE_URL=${CONVEX_SITE_URL:-http://host.docker.internal:3211}
+      # Lets expressions read $env.AUTOMATION_SECRET and $env.CONVEX_SITE_URL
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - N8N_SECURE_COOKIE=false
+      - GENERIC_TIMEZONE=Africa/Porto-Novo
+      - TZ=Africa/Porto-Novo
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - n8n_data:/home/node/.n8n
+volumes:
+  n8n_data:

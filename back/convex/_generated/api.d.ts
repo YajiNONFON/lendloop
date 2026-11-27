@@ -8,6 +8,12 @@
  * @module
  */
 
+import type * as automation_actions from "../automation/actions.js";
+import type * as automation_config from "../automation/config.js";
+import type * as automation_domain from "../automation/domain.js";
+import type * as automation_mutations from "../automation/mutations.js";
+import type * as automation_queries from "../automation/queries.js";
+import type * as http from "../http.js";
 import type * as loans_domain from "../loans/domain.js";
 import type * as loans_mutations from "../loans/mutations.js";
 import type * as loans_queries from "../loans/queries.js";
@@ -28,6 +34,12 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "automation/actions": typeof automation_actions;
+  "automation/config": typeof automation_config;
+  "automation/domain": typeof automation_domain;
+  "automation/mutations": typeof automation_mutations;
+  "automation/queries": typeof automation_queries;
+  http: typeof http;
   "loans/domain": typeof loans_domain;
   "loans/mutations": typeof loans_mutations;
   "loans/queries": typeof loans_queries;
