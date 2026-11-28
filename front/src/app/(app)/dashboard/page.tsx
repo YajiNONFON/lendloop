@@ -1,25 +1,44 @@
 'use client';
+import Link from 'next/link';
 import {useQuery} from 'convex/react';
+import {AlertTriangle,CalendarClock,Handshake,Inbox,PackageSearch,Wrench} from 'lucide-react';
 import {api} from '@convex/_generated/api';
-import {Card,Badge,Avatar,Stat,Donut,Area} from '@/components/ui';
-import {Reminders,Featured} from '@/components/widgets';
-import {toolImg} from '@/lib/types';
+import {Card,Badge,Donut,PageHeader,Skeleton,Stat,EmptyState} from '@/components/ui';
+import ActivityChart from '@/components/activity-chart';
+import ToolImage from '@/components/tool-image';
+import {Featured,Reminders} from '@/components/widgets';
+import {Reveal} from '@/components/motion';
+import {btnClass} from '@/lib/styles';
+import {formatDate,plural} from '@/lib/format';
 const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-export default function Dashboard(){const me=useQuery(api.users.queries.me);const tools=useQuery(api.tools.queries.listAll,me?{}:'skip');const loans=useQuery(api.loans.queries.listMine,me?{}:'skip');
-if(!me||!tools||!loans)return <Card className="py-14 text-center text-slate-500">Loading your dashboard...</Card>;
-const approved=loans.filter(l=>l.status==='approved');const od=approved.filter(l=>l.overdue).length;const avail=tools.filter(t=>t.available).length;const out=tools.length-avail;
-const upcoming=approved.filter(l=>!l.overdue).sort((a,b)=>a.endDate.localeCompare(b.endDate));const latest=loans[0];const year=String(new Date().getFullYear());
+export default function Dashboard(){
+const me=useQuery(api.users.queries.me);const tools=useQuery(api.tools.queries.listAll,me?{}:'skip');const loans=useQuery(api.loans.queries.listMine,me?{}:'skip');
+if(!me||!tools||!loans)return <div role="status" aria-label="Loading"><Skeleton className="mb-6 h-12 w-72"/><div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">{[0,1,2,3].map(i=><Skeleton key={i} className="h-32"/>)}</div><Skeleton className="mt-5 h-72"/></div>;
+const approved=loans.filter(l=>l.status==='approved');const od=approved.filter(l=>l.overdue).length;
+const avail=tools.filter(t=>t.available).length;const out=tools.length-avail;const onLoan=Math.max(out-od,0);
+const waiting=loans.filter(l=>l.role==='lender'&&l.status==='pending').length;
+const upcoming=approved.filter(l=>!l.overdue).sort((a,b)=>a.endDate.localeCompare(b.endDate));const year=String(new Date().getFullYear());
 const monthly=M.map((_,i)=>loans.filter(l=>l.startDate.slice(0,4)===year&&Number(l.startDate.slice(5,7))===i+1).length);
 const other=(l:typeof loans[number])=>l.role==='lender'?l.borrowerName:l.lenderName;
 return <>
-<div className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><p className="text-slate-500">Welcome back, {me.name.split(' ')[0]}</p><h1 className="text-4xl font-medium leading-tight sm:text-5xl">Neighbourhood<br/>Overview</h1></div>
-<div className="flex w-full gap-4 sm:w-auto"><Stat icon="🔧" label="Tools shared" value={tools.length}/><Stat icon="🤝" label="Active loans" value={approved.length}/></div></div>
-<div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]"><div className="grid content-start gap-5">
-<Card><div className="mb-2 flex items-center justify-between"><h3 className="text-xl font-medium">Loan activity</h3><span className="rounded-lg border px-3 py-1 text-sm text-slate-500">{year}</span></div><Area data={monthly} labels={M}/></Card>
-<div className="grid gap-5 md:grid-cols-[1fr_1.2fr]"><Card><h3 className="mb-3 text-xl font-medium">Availability</h3><div className="relative mx-auto w-fit"><Donut parts={[[avail,'#0f8a5f'],[Math.max(out-od,0),'#e6f57a'],[od,'#f43f5e']]}/><div className="absolute inset-0 grid place-items-center text-center"><div><p className="text-3xl font-medium">{tools.length}</p><p className="text-xs text-slate-500">Total tools</p></div></div></div>
-<div className="mt-3 flex flex-wrap justify-between gap-1 text-sm"><span>🟢 {avail} available</span><span>🟡 {Math.max(out-od,0)} on loan</span><span>🔴 {od} overdue</span></div></Card><Reminders loans={loans}/></div>
-<Card className="overflow-x-auto"><h3 className="mb-3 text-xl font-medium">My loans</h3>{!loans.length?<p className="py-6 text-center text-slate-500">🌱 No loans yet. Request a tool to get started.</p>:<table className="w-full min-w-[560px] text-left text-sm"><thead className="text-slate-400"><tr><th className="pb-2 font-normal">Tool</th><th className="font-normal">With</th><th className="font-normal">Return by</th><th className="font-normal">Status</th></tr></thead><tbody>{loans.map(l=><tr key={l._id} className="border-t border-slate-100"><td className="py-3"><span className="flex items-center gap-3"><img src={toolImg(l.toolId)} alt="" className="size-11 rounded-xl object-cover"/><span><b className="block font-medium">{l.toolName}</b><span className="text-xs text-slate-400">{l.role==='lender'?'You lend':'You borrow'}</span></span></span></td><td>{other(l)}</td><td>{l.endDate}</td><td><Badge s={l.overdue?'overdue':l.status}/></td></tr>)}</tbody></table>}</Card></div>
-<div className="grid content-start gap-5"><Featured tools={tools} loans={loans}/><div className="grid gap-5 md:grid-cols-2">
-{latest&&<Card><div className="flex items-center gap-3"><Avatar n={other(latest)}/><span><b className="block font-medium">{other(latest)}</b><span className="text-sm text-slate-500">{latest.toolName}</span></span></div><p className="mt-5 text-xl font-medium">{latest.startDate} to {latest.endDate}</p><div className="mt-3 flex items-center justify-between"><span className="text-xs text-slate-400">Latest request</span><Badge s={latest.status}/></div></Card>}
-<Card><h3 className="mb-3 font-medium">Upcoming returns</h3><div className="mb-3 flex justify-between">{[0,1,2,3,4].map(i=>{const d=new Date(Date.now()+i*864e5);return <div suppressHydrationWarning key={i} className={`rounded-xl px-2 py-2 text-center text-xs ${i===0?'bg-brand text-white':'text-slate-500'}`}><p>{d.getDate()}</p><p>{d.toLocaleDateString('en',{weekday:'short'})}</p></div>})}</div>
-{upcoming.slice(0,3).map(l=><div key={l._id} className="mb-2 border-l-2 border-brand pl-3 text-sm"><b className="block font-medium">Return {l.toolName}</b><span className="text-slate-500">{other(l)}, by {l.endDate}</span></div>)}{!upcoming.length&&<p className="text-sm text-slate-500">No returns coming up.</p>}</Card></div></div></div></>}
+<PageHeader title={`Welcome back, ${me.name.split(' ')[0]}`} subtitle="Here is what is happening in your neighbourhood."/>
+<div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+{[{icon:Wrench,label:'Tools shared',value:tools.length},{icon:Handshake,label:'Active loans',value:approved.length},{icon:Inbox,label:'Awaiting your answer',value:waiting},{icon:AlertTriangle,label:'Overdue',value:od}].map((s,i)=><Reveal key={s.label} i={i}><Stat {...s}/></Reveal>)}</div>
+<div className="mt-5 grid gap-5 xl:grid-cols-3"><div className="grid content-start gap-5 xl:col-span-2">
+<Reveal i={4}><Card><div className="mb-3 flex items-center justify-between gap-3"><h2 className="text-lg font-semibold">Loan activity</h2><span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-900">{year}</span></div><ActivityChart data={monthly} labels={M}/></Card></Reveal>
+<div className="grid gap-5 lg:grid-cols-2"><Reveal i={5}><Card className="h-full"><h2 className="mb-4 text-lg font-semibold">Availability</h2>
+<div className="relative mx-auto w-fit"><Donut parts={[[avail,'#0d7a54'],[onLoan,'#e6f57a'],[od,'#e11d48']]}/><div className="absolute inset-0 grid place-items-center text-center"><div><p className="text-3xl font-semibold">{tools.length}</p><p className="text-[13px] text-slate-600">{tools.length===1?'Total tool':'Total tools'}</p></div></div></div>
+<ul className="mt-4 grid gap-1.5 text-[15px]">{[['bg-brand',avail,'available'],['bg-lime ring-1 ring-emerald-700/30',onLoan,'on loan'],['bg-rose-600',od,'overdue']].map(([c,n,l])=><li key={String(l)} className="flex items-center justify-between"><span className="flex items-center gap-2"><span aria-hidden className={`size-3 rounded-full ${c}`}/>{String(l).replace(/^./,x=>x.toUpperCase())}</span><b className="font-semibold">{n}</b></li>)}</ul></Card></Reveal>
+<Reveal i={6}><Reminders loans={loans}/></Reveal></div>
+<Reveal i={7}><Card><div className="mb-2 flex items-center justify-between gap-3"><h2 className="text-lg font-semibold">My loans</h2><span className="text-sm text-slate-600">{plural(loans.length,'loan')}</span></div>
+{!loans.length?<EmptyState icon={PackageSearch} title="No loans yet" text="Request a tool from a neighbour or list your own to get started." action={<Link href="/browse" className={btnClass('solid','lg')}>Browse tools</Link>}/>:
+<div><div aria-hidden className="hidden grid-cols-[minmax(0,2.2fr)_1.2fr_1fr_auto] gap-4 border-b border-emerald-900/5 pb-2 text-[13px] font-medium text-slate-600 md:grid"><span>Tool</span><span>With</span><span>Return by</span><span className="min-w-24">Status</span></div>
+<ul>{loans.map(l=><li key={l._id} className="grid gap-2 border-b border-emerald-900/5 py-3.5 last:border-0 md:grid-cols-[minmax(0,2.2fr)_1.2fr_1fr_auto] md:items-center md:gap-4">
+<span className="flex min-w-0 items-center gap-3"><ToolImage tool={{name:l.toolName,category:l.toolCategory}} variant="thumb" className="!size-12"/><span className="min-w-0"><b className="block truncate font-semibold">{l.toolName}</b><span className="text-[13px] text-slate-600">{l.role==='lender'?'You lend':'You borrow'}</span></span></span>
+<span className="text-[15px]"><span className="text-slate-600 md:hidden">With: </span>{other(l)}</span>
+<span className="text-[15px]"><span className="text-slate-600 md:hidden">Return by: </span>{formatDate(l.endDate)}</span>
+<span className="md:min-w-24"><Badge s={l.overdue?'overdue':l.status}/></span></li>)}</ul></div>}</Card></Reveal></div>
+<div className="grid content-start gap-5"><Reveal i={5}><Featured tools={tools} loans={loans}/></Reveal>
+<Reveal i={6}><Card><h2 className="mb-4 text-lg font-semibold">Upcoming returns</h2>
+<div className="mb-4 grid grid-cols-5 gap-1.5 text-center">{[0,1,2,3,4].map(i=>{const d=new Date(Date.now()+i*864e5);return <div suppressHydrationWarning key={i} className={`rounded-2xl py-2 ${i===0?'bg-brand text-white':'bg-emerald-50 text-slate-700'}`}><p className="text-lg font-semibold leading-tight">{d.getDate()}</p><p className="text-[13px]">{d.toLocaleDateString('en-GB',{weekday:'short'})}</p></div>;})}</div>
+{!upcoming.length?<p className="flex items-center gap-2 text-[15px] text-slate-600"><CalendarClock aria-hidden className="size-4"/>No returns coming up.</p>:<ul className="grid gap-3">{upcoming.slice(0,4).map(l=><li key={l._id} className="flex items-start gap-3 rounded-2xl bg-emerald-50/60 p-3"><CalendarClock aria-hidden className="mt-0.5 size-5 shrink-0 text-brand"/><span className="min-w-0 text-[15px]"><b className="block truncate font-semibold">{l.toolName}</b><span className="text-slate-600">{other(l)}, by {formatDate(l.endDate)}</span></span></li>)}</ul>}</Card></Reveal></div></div></>;}

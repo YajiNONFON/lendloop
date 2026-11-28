@@ -1,20 +1,45 @@
-import {toolImg} from '@/lib/types';
+import Image from 'next/image';
+import Link from 'next/link';
+import {BadgeCheck,Bell,Clock,Handshake,ListPlus,ShieldCheck,Undo2} from 'lucide-react';
 import Cta from '@/components/cta';
+import Logo from '@/components/logo';
 import PublicTools from '@/components/public-tools';
-const cta='rounded-full bg-brand px-6 py-3 font-medium text-white shadow-lg shadow-emerald-900/20 hover:bg-brand-dark';
-export default function Home(){return <div className="mx-auto max-w-6xl px-4 sm:px-5">
-<header className="flex items-center justify-between py-6"><span className="flex items-center gap-2 text-xl font-medium"><span className="grid size-10 place-items-center rounded-xl bg-brand text-white">↻</span>LendLoop</span>
-<nav className="hidden gap-8 text-sm text-slate-600 md:flex"><a href="#how">How it works</a><a href="#trust">Why LendLoop</a><a href="#tools">Shared tools</a></nav><Cta className={cta+' !px-4 !py-2.5 text-sm sm:!px-6'} label="Sign in"/></header>
-<section className="grid items-center gap-10 py-12 lg:grid-cols-2 lg:py-20"><div><span className="rounded-full bg-lime/70 px-4 py-1.5 text-sm">Neighbourhood tool lending</span>
-<h1 className="mt-5 text-4xl font-medium leading-[1.05] sm:text-5xl lg:text-6xl">Borrow what you need. Lend what you don’t.</h1>
-<p className="mt-5 max-w-lg text-lg text-slate-600">List the tools sitting in your garage, request what you need from a neighbour, and let automatic reminders do the chasing. Fewer purchases, more community.</p>
-<div className="mt-8 flex flex-wrap items-center gap-4"><Cta className={cta}/><a href="#how" className="rounded-full bg-white px-6 py-3 font-medium text-brand ring-1 ring-emerald-100">See how it works</a></div>
-<div className="mt-8 flex items-center gap-3 text-sm text-slate-600"><div className="flex -space-x-2">{['A','K','N','M'].map((c,i)=><span key={c} className={`grid size-9 place-items-center rounded-full ring-2 ring-white ${['bg-emerald-200','bg-amber-200','bg-sky-200','bg-rose-200'][i]}`}>{c}</span>)}</div>120+ neighbours already sharing</div></div>
-<div className="relative"><img src="/img/hero.jpg" alt="" className="h-[360px] w-full rounded-[2.5rem] object-cover shadow-2xl sm:h-[520px]"/>
-<div className="absolute bottom-6 left-2 sm:-left-4 sm:bottom-10 rounded-3xl bg-white p-4 shadow-xl"><p className="text-sm text-slate-500">Tools shared nearby</p><p className="text-3xl font-medium text-brand">52 <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs">+12%</span></p></div>
-<div className="absolute right-2 top-4 w-52 sm:-right-2 sm:top-8 sm:w-60 rounded-3xl bg-white p-4 shadow-xl"><div className="flex items-center gap-3"><img src={toolImg('t1')} alt="" className="size-12 rounded-xl object-cover"/><div><p className="font-medium">Cordless drill</p><p className="text-xs text-slate-500">Request from Koffi</p></div></div><span className="mt-3 inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs text-emerald-700">Approved</span></div></div></section>
-<section id="how" className="py-14"><h2 className="mb-8 text-3xl font-medium sm:text-4xl">How it works</h2><div className="grid gap-5 md:grid-cols-3">{[['List a tool','Add a photo, a category and its condition in under a minute.','t1'],['Request and agree','Pick your dates. The owner approves or declines, and you both get notified.','t3'],['Return and repeat','Mark the loan as returned. Late? A friendly reminder goes out automatically.','t4']].map(([t,d,i])=><div key={t} className="overflow-hidden rounded-[28px] border border-white bg-white/80"><img src={toolImg(i)} alt="" className="h-44 w-full object-cover"/><div className="p-5"><h3 className="text-xl font-medium">{t}</h3><p className="mt-1 text-slate-500">{d}</p></div></div>)}</div></section>
-<section id="trust" className="rounded-[2.5rem] bg-gradient-to-br from-emerald-800 to-emerald-600 p-8 text-white sm:p-12"><h2 className="max-w-xl text-3xl font-medium sm:text-4xl">Built so neighbours can trust each other</h2><div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{[['🔐','Role-based access','Every action is checked on the server, not just in the interface.'],['⚡','Automatic notifications','Each request and decision reaches the right person instantly.'],['⏰','Overdue reminders','A daily check nudges borrowers before it becomes awkward.'],['🏅','Trusted lenders','Reliable lenders earn a badge that others can see.']].map(([e,t,d])=><div key={t} className="rounded-3xl bg-white/10 p-5 backdrop-blur"><span className="text-2xl">{e}</span><h3 className="mt-3 font-medium">{t}</h3><p className="mt-1 text-sm text-emerald-50">{d}</p></div>)}</div></section>
-<section id="tools" className="py-14"><h2 className="mb-8 text-3xl font-medium sm:text-4xl">Shared in your neighbourhood</h2><PublicTools/></section>
-<section className="mb-14 rounded-[2.5rem] bg-lime/60 p-10 text-center"><h2 className="text-3xl font-medium sm:text-4xl">Ready to borrow your next tool?</h2><p className="mt-2 text-slate-600">Join your neighbours in a few clicks.</p><Cta className={cta+" mt-6 inline-block"}/></section>
-<footer className="flex flex-wrap justify-between gap-2 border-t border-emerald-900/10 py-8 text-sm text-slate-500"><span>© 2026 LendLoop</span><span>Borrow what you need. Lend what you don’t.</span></footer></div>}
+import {Reveal} from '@/components/motion';
+import {btnClass} from '@/lib/styles';
+import {BLUR_DATA_URL,LANDING_IMAGES} from '@/config/images';
+const STEPS=[
+ {icon:ListPlus,title:'List a tool',text:'Add what sits in your garage with its category and condition, in under a minute.',src:LANDING_IMAGES.howList,alt:'A neighbour holding a cordless drill and a toolbox in a tool library',pos:'object-top'},
+ {icon:Handshake,title:'Request and agree',text:'Pick your dates. The owner approves or declines, and both of you are notified.',src:LANDING_IMAGES.howRequest,alt:'Two neighbours smiling with a ladder, a hammer and a drill',pos:'object-center'},
+ {icon:Undo2,title:'Return and repeat',text:'Mark the loan as returned. If it runs late, a friendly reminder goes out automatically.',src:LANDING_IMAGES.howReturn,alt:'A smiling volunteer putting a power tool back on a shelf',pos:'object-center'}];
+const TRUST=[
+ {icon:ShieldCheck,title:'Role-based access',text:'Every action is checked on the server, not just in the interface.'},
+ {icon:Bell,title:'Automatic notifications',text:'Each request and decision reaches the right person.'},
+ {icon:Clock,title:'Overdue reminders',text:'A daily check nudges borrowers before it becomes awkward.'},
+ {icon:BadgeCheck,title:'Trusted lenders',text:'Reliable lenders earn a badge that others can see.'}];
+export default function Home(){return <div className="min-h-screen">
+<header className="sticky top-0 z-30 border-b border-emerald-900/5 bg-cream/85 backdrop-blur"><div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between gap-4 px-4 sm:px-6">
+<Link href="/" aria-label="LendLoop home"><Logo/></Link>
+<nav aria-label="Sections" className="hidden items-center gap-8 text-[15px] font-medium text-slate-700 md:flex"><a className="hover:text-brand-dark" href="#how">How it works</a><a className="hover:text-brand-dark" href="#trust">Why LendLoop</a><a className="hover:text-brand-dark" href="#tools">Shared tools</a></nav>
+<Cta className={btnClass('solid')} label="Sign in"/></div></header>
+<main>
+<section className="mx-auto grid max-w-[1280px] items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:py-20">
+<Reveal><span className="inline-flex rounded-full bg-lime/70 px-4 py-1.5 text-sm font-medium text-emerald-950">Neighbourhood tool lending</span>
+<h1 className="mt-5 text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">Borrow what you need. Lend what you don’t.</h1>
+<p className="mt-5 max-w-xl text-lg text-slate-600">List the tools sitting in your garage, request what you need from a neighbour, and let automatic reminders do the chasing. Fewer purchases, more community.</p>
+<div className="mt-8 flex flex-wrap items-center gap-3"><Cta className={btnClass('solid','lg')}/><a href="#how" className={btnClass('ghost','lg')}>See how it works</a></div></Reveal>
+<Reveal i={2}><div className="relative aspect-square overflow-hidden rounded-[2rem] shadow-[0_24px_60px_rgba(15,60,40,.18)]"><Image src={LANDING_IMAGES.hero} alt="A neighbour handing a toolbox to another neighbour at her front door" fill priority sizes="(min-width:1024px) 600px,100vw" placeholder="blur" blurDataURL={BLUR_DATA_URL} className="object-cover object-center"/></div></Reveal></section>
+<section id="how" className="mx-auto max-w-[1280px] scroll-mt-20 px-4 py-12 sm:px-6"><h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">How it works</h2><p className="mt-2 max-w-2xl text-[17px] text-slate-600">Three simple steps between your garage and your neighbour’s project.</p>
+<ol className="mt-8 grid gap-5 md:grid-cols-3">{STEPS.map((s,i)=><li key={s.title}><Reveal inView i={i} className="h-full"><div className="h-full overflow-hidden rounded-3xl border border-emerald-900/5 bg-white shadow-[0_10px_28px_rgba(15,60,40,.05)]">
+<div className="relative aspect-[3/2] w-full"><Image src={s.src} alt={s.alt} fill sizes="(min-width:768px) 33vw,100vw" placeholder="blur" blurDataURL={BLUR_DATA_URL} className={`object-cover ${s.pos}`}/></div>
+<div className="p-6"><span className="grid size-11 place-items-center rounded-2xl bg-lime/60 text-emerald-900"><s.icon aria-hidden className="size-5"/></span><h3 className="mt-4 text-xl font-semibold">{i+1}. {s.title}</h3><p className="mt-1.5 text-[15px] text-slate-600">{s.text}</p></div></div></Reveal></li>)}</ol></section>
+<section id="trust" className="mx-auto max-w-[1280px] scroll-mt-20 px-4 py-12 sm:px-6"><div className="rounded-[2rem] bg-brand-dark px-6 py-10 text-white sm:px-10 sm:py-14">
+<h2 className="max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">Built so neighbours can trust each other</h2>
+<ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{TRUST.map((t,i)=><li key={t.title}><Reveal inView i={i} className="h-full"><div className="h-full rounded-3xl bg-white/10 p-6 ring-1 ring-white/10"><span className="grid size-11 place-items-center rounded-2xl bg-lime text-emerald-950"><t.icon aria-hidden className="size-5"/></span>
+<h3 className="mt-4 text-lg font-semibold">{t.title}</h3><p className="mt-1.5 text-[15px] text-emerald-50">{t.text}</p></div></Reveal></li>)}</ul></div></section>
+<section id="tools" className="mx-auto max-w-[1280px] scroll-mt-20 px-4 py-12 sm:px-6"><h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Shared in your neighbourhood</h2><p className="mb-8 mt-2 text-[17px] text-slate-600">Tools available to borrow right now.</p><PublicTools/></section>
+<section className="mx-auto max-w-[1280px] px-4 pb-16 pt-6 sm:px-6"><div className="relative isolate flex min-h-[380px] items-center overflow-hidden rounded-[2rem]">
+<Image src={LANDING_IMAGES.ctaBanner} alt="A cordless drill, a toolbox and a tape measure on a workbench" fill sizes="(min-width:1280px) 1280px,100vw" placeholder="blur" blurDataURL={BLUR_DATA_URL} className="-z-20 object-cover object-right"/>
+<div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-r from-emerald-950/90 via-emerald-950/65 to-emerald-950/10"/>
+<div className="max-w-xl px-6 py-12 text-white sm:px-12"><h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Ready to borrow your next tool?</h2><p className="mt-3 text-[17px] text-emerald-50">Join your neighbours in a few clicks.</p>
+<div className="mt-7"><Cta className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-6 text-[15px] font-semibold text-brand-dark transition hover:bg-emerald-50"/></div></div></div></section></main>
+<footer className="border-t border-emerald-900/5"><div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-3 px-4 py-8 text-sm text-slate-600 sm:px-6"><span>© 2026 LendLoop</span><span>Borrow what you need. Lend what you don’t.</span></div></footer></div>;}

@@ -1,8 +1,10 @@
 'use client';
 import Link from 'next/link';
-// Shown if a screen crashes, for example when the session expired. The user can retry or go home.
+import {RefreshCw} from 'lucide-react';
+import {btnClass} from '@/lib/styles';
+// Shown if a public page crashes. The user can retry or go home.
 export default function Error({reset}:{error:Error;reset:()=>void}){
-return <main className="mx-auto grid min-h-[60vh] max-w-md place-items-center px-4 text-center"><div className="rounded-[28px] border border-white bg-white/80 p-8 shadow">
-<p className="text-4xl">🌿</p><h1 className="mt-3 text-2xl font-medium">Something went wrong</h1>
-<p className="mt-2 text-slate-500">Your data is safe. Check your connection and try again.</p>
-<div className="mt-5 flex justify-center gap-2"><button onClick={reset} className="rounded-full bg-brand px-5 py-2 text-sm font-medium text-white">Try again</button><Link href="/" className="rounded-full bg-white px-5 py-2 text-sm font-medium text-brand ring-1 ring-emerald-100">Home</Link></div></div></main>}
+return <main className="mx-auto grid min-h-[70vh] max-w-md place-items-center px-4 text-center"><div className="rounded-3xl border border-emerald-900/5 bg-white p-8 shadow">
+<span className="mx-auto grid size-16 place-items-center rounded-full bg-emerald-100 text-brand"><RefreshCw aria-hidden className="size-8"/></span>
+<h1 className="mt-5 text-2xl font-semibold">Something went wrong</h1><p className="mt-2 text-[15px] text-slate-600">Check your connection and try again.</p>
+<div className="mt-6 flex flex-wrap justify-center gap-2"><button type="button" onClick={reset} className={btnClass('solid','lg')}>Try again</button><Link href="/" className={btnClass('ghost','lg')}>Home</Link></div></div></main>;}
