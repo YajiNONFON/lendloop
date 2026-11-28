@@ -3,4 +3,3 @@ export interface LoanView{_id:string;toolId:string;toolName:string;toolCategory:
 export interface ToolInput{name:string;category:string;condition:string;description:string}
 export const CATEGORIES=['Power tools','Garden','Kitchen','Camping','Cleaning','Other'];
 export const today=()=>new Date().toISOString().slice(0,10);
-export const toolImg=(id:string)=>`/img/t${[...id].reduce((a,c)=>a+c.charCodeAt(0),0)%6+1}.jpg`;
